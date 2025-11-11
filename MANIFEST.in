@@ -1,0 +1,17 @@
+# Include documentation
+include README.md
+include LICENSE
+
+# Include requirements
+include requirements.txt
+include pyproject.toml
+
+# Include templates and static files
+recursive-include business_rl/tools/templates *.html
+recursive-include business_rl/tools/static *.css *.js
+
+# Exclude development and test files
+recursive-exclude tests *
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude * .DS_Store
