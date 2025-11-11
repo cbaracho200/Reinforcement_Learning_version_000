@@ -677,15 +677,34 @@ Use este checklist ao desenvolver seu modelo:
 
 ## 🔧 Instalação
 
-### Opção 1: Instalação Local (Desenvolvimento)
+### Opção 1: Instalação via pip (Recomendado)
 ```bash
-cd C:\Users\incorporacao-04\Desktop\AGENTS_RL_AVANÇADOS\RL_001
+# Clone o repositório
+git clone https://github.com/cbaracho200/Reinforcement_Learning_version_000.git
+cd Reinforcement_Learning_version_000
+
+# Instale o pacote
 pip install -e .
 ```
 
-### Opção 2: Instalar dependências manualmente
+### Opção 2: Instalação em modo desenvolvimento
+```bash
+# Navegue até a pasta onde clonou o repositório
+cd /caminho/para/Reinforcement_Learning_version_000
+
+# Instale em modo editável (para desenvolvedores)
+pip install -e .
+```
+
+### Opção 3: Instalar dependências manualmente
 ```bash
 pip install torch numpy gym flask
+```
+
+### Verificar instalação
+```bash
+# Teste se a instalação funcionou
+python -c "import business_rl as brl; print('✅ Business-RL instalado com sucesso!')"
 ```
 
 ---
