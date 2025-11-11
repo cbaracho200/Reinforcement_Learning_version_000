@@ -1,0 +1,134 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Business-RL Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .metric-card {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        .metric-value {
+            font-size: 2em;
+            font-weight: bold;
+            color: #4CAF50;
+        }
+        .metric-label {
+            color: #999;
+            margin-top: 5px;
+        }
+        .plot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(600px, 1fr));
+            gap: 20px;
+        }
+        .plot-container {
+            background: #2a2a2a;
+            border-radius: 10px;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Business-RL Training Dashboard</h1>
+        </div>
+        
+        <div class="metrics-grid" id="metrics">
+            <!-- Métricas serão inseridas aqui -->
+        </div>
+        
+        <div class="plot-grid">
+            <div class="plot-container">
+                <div id="rewards-plot"></div>
+            </div>
+            <div class="plot-container">
+                <div id="losses-plot"></div>
+            </div>
+            <div class="plot-container">
+                <div id="constraints-plot"></div>
+            </div>
+            <div class="plot-container">
+                <div id="risk-plot"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Atualiza métricas
+        function updateMetrics() {
+            fetch('/api/metrics')
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('metrics');
+                    container.innerHTML = '';
+                    
+                    const mainMetrics = [
+                        'total_steps', 'total_episodes', 
+                        'mean_reward', 'best_reward'
+                    ];
+                    
+                    for (let metric of mainMetrics) {
+                        if (data[metric] !== undefined) {
+                            const card = document.createElement('div');
+                            card.className = 'metric-card';
+                            card.innerHTML = `
+                                <div class="metric-value">${data[metric].toFixed(2)}</div>
+                                <div class="metric-label">${metric.replace('_', ' ')}</div>
+                            `;
+                            container.appendChild(card);
+                        }
+                    }
+                });
+        }
+        
+        // Atualiza gráficos
+        function updatePlots() {
+            const plots = ['rewards', 'losses', 'constraints', 'risk'];
+            
+            for (let plot of plots) {
+                fetch(`/api/plots/${plot}`)
+                    .then(response => response.json())
+                    .then(fig => {
+                        if (fig && Object.keys(fig).length > 0) {
+                            Plotly.newPlot(`${plot}-plot`, fig);
+                        }
+                    });
+            }
+        }
+        
+        // Atualiza periodicamente
+        setInterval(updateMetrics, 1000);
+        setInterval(updatePlots, 5000);
+        
+        // Carrega inicial
+        updateMetrics();
+        updatePlots();
+    </script>
+</body>
+</html>
