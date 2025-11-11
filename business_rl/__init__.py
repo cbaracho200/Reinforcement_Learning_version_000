@@ -27,22 +27,22 @@ try:
     __all__ = [
         # Core
         'ProblemSpec', 'Agent', 'Decision', 'Trainer', 'train',
-        
+        'Objective', 'Constraint', 'UnifiedMemory',
+
         # DSL
         'problem', 'Dict', 'Box', 'Discrete', 'Mixed', 'Terms', 'Limit', 'CVaR',
-        
+
         # Algoritmos
         'PPOAgent', 'SACAgent', 'AlgorithmRegistry',
-        
+
         # Tools
         'TrainingDashboard',
-        
+
         # Meta
         '__version__'
     ]
-    
-    print("Business-RL carregado com sucesso!")
-    
+
 except ImportError as e:
-    print(f"Aviso: Alguns módulos não puderam ser importados: {e}")
-    __all__ = []
+    import warnings
+    warnings.warn(f"Alguns módulos não puderam ser importados: {e}")
+    __all__ = ['__version__']
