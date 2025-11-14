@@ -677,22 +677,18 @@ Use este checklist ao desenvolver seu modelo:
 
 ## 🔧 Instalação
 
-### Opção 1: Instalação via pip (Recomendado)
+### Opção 1: Instalação direta do GitHub (Recomendado)
+```bash
+pip install git+https://github.com/cbaracho200/Reinforcement_Learning_version_000.git
+```
+
+### Opção 2: Instalação local (para desenvolvimento)
 ```bash
 # Clone o repositório
 git clone https://github.com/cbaracho200/Reinforcement_Learning_version_000.git
 cd Reinforcement_Learning_version_000
 
-# Instale o pacote
-pip install -e .
-```
-
-### Opção 2: Instalação em modo desenvolvimento
-```bash
-# Navegue até a pasta onde clonou o repositório
-cd /caminho/para/Reinforcement_Learning_version_000
-
-# Instale em modo editável (para desenvolvedores)
+# Instale em modo editável (permite modificar o código)
 pip install -e .
 ```
 
@@ -705,6 +701,26 @@ pip install torch numpy gym flask
 ```bash
 # Teste se a instalação funcionou
 python -c "import business_rl as brl; print('✅ Business-RL instalado com sucesso!')"
+```
+
+### 📦 Publicar no PyPI (Opcional - para mantenedores)
+
+Se você quer que outros instalem apenas com `pip install business-rl`, precisa publicar no PyPI:
+
+```bash
+# 1. Instale as ferramentas
+pip install build twine
+
+# 2. Gere os arquivos de distribuição
+python -m build
+
+# 3. Publique no PyPI
+python -m twine upload dist/*
+```
+
+Após publicar, qualquer pessoa poderá instalar com:
+```bash
+pip install business-rl
 ```
 
 ---
