@@ -57,9 +57,9 @@ class MetaController:
         tendencia_mercado=brl.Box(-1, 1),    # -1=baixa, +1=alta
         volume_mercado=brl.Box(0, 1),        # Volume normalizado
 
-        # Índices de mercado (últimos 20 períodos)
-        sp500_retornos=brl.Box(-0.1, 0.1, shape=(20,)),
-        nasdaq_retornos=brl.Box(-0.1, 0.1, shape=(20,)),
+        # Retornos médios dos índices (agregados)
+        sp500_retorno_medio=brl.Box(-0.1, 0.1),
+        nasdaq_retorno_medio=brl.Box(-0.1, 0.1),
 
         # Estado do portfólio
         valor_portfolio=brl.Box(0, 1000000),
@@ -174,18 +174,19 @@ class ControllerAgressivo:
     """
 
     obs = brl.Dict(
-        # Preços e retornos de 5 ativos
-        precos=brl.Box(0, 500, shape=(5,)),
-        retornos_1h=brl.Box(-0.1, 0.1, shape=(5,)),
-        retornos_24h=brl.Box(-0.3, 0.3, shape=(5,)),
+        # Métricas agregadas do portfólio
+        preco_medio=brl.Box(0, 500),
+        retorno_1h_medio=brl.Box(-0.1, 0.1),
+        retorno_24h_medio=brl.Box(-0.3, 0.3),
 
-        # Momentum e volume
-        rsi=brl.Box(0, 100, shape=(5,)),  # Relative Strength Index
-        volume_relativo=brl.Box(0, 5, shape=(5,)),
+        # Momentum e volume médio
+        rsi_medio=brl.Box(0, 100),  # Relative Strength Index médio
+        volume_relativo_medio=brl.Box(0, 5),
 
-        # Posições atuais
-        posicoes=brl.Box(-100, 100, shape=(5,)),  # Negativo = short
-        pnl_nao_realizado=brl.Box(-10000, 10000, shape=(5,)),
+        # Posições agregadas
+        n_posicoes_long=brl.Box(0, 10),
+        n_posicoes_short=brl.Box(0, 10),
+        pnl_total=brl.Box(-50000, 50000),
 
         # Capital disponível
         capital_disponivel=brl.Box(0, 1000000),
@@ -193,8 +194,8 @@ class ControllerAgressivo:
     )
 
     action = brl.Dict(
-        # Ação para cada ativo: -1 a +1 (vender/comprar)
-        acoes=brl.Box(-1, 1, shape=(5,)),
+        # Ação de trading: -1=vender tudo, 0=manter, +1=comprar max
+        acao_trading=brl.Box(-1, 1),
 
         # Stop loss (% de perda aceitável)
         stop_loss=brl.Box(0.05, 0.20),  # 5% a 20%
@@ -214,19 +215,20 @@ class ControllerAgressivo:
 
     def reward_retorno(self, state, action, next_state):
         """Maximiza retornos."""
-        # PnL das posições
-        pnl = np.sum(next_state['pnl_nao_realizado'])
+        # PnL total
+        pnl = next_state['pnl_total']
         return pnl / 100
 
     def reward_momentum(self, state, action, next_state):
         """Segue momentum."""
-        # Compra ativos com RSI alto (momentum positivo)
-        # Vende ativos com RSI baixo
-        acoes = action['acoes']
-        rsi = state['rsi']
+        # Alinha ação com RSI médio
+        acao = action['acao_trading']
+        rsi = state['rsi_medio']
 
         # Recompensa alinhar ação com momentum
-        alinhamento = np.sum(acoes * (rsi - 50) / 50)
+        # RSI > 50 = momentum positivo, deve comprar
+        momentum_signal = (rsi - 50) / 50  # -1 a +1
+        alinhamento = acao * momentum_signal
         return alinhamento * 10
 
     def reward_gestao_risco(self, state, action, next_state):
@@ -250,24 +252,24 @@ class ControllerConservador:
     """
 
     obs = brl.Dict(
-        # Similar ao agressivo, mas foca em métricas de risco
-        precos=brl.Box(0, 500, shape=(5,)),
-        volatilidade=brl.Box(0, 1, shape=(5,)),
-        beta=brl.Box(-2, 2, shape=(5,)),  # Beta vs mercado
+        # Métricas de risco agregadas
+        preco_medio=brl.Box(0, 500),
+        volatilidade_media=brl.Box(0, 1),
+        beta_portfolio=brl.Box(-2, 2),  # Beta vs mercado
 
-        # Posições
-        posicoes=brl.Box(-100, 100, shape=(5,)),
-        pnl_nao_realizado=brl.Box(-10000, 10000, shape=(5,)),
+        # Posições agregadas
+        n_posicoes_total=brl.Box(0, 10),
+        pnl_total=brl.Box(-50000, 50000),
 
-        # Correlações (proteção via diversificação)
-        matriz_correlacao=brl.Box(-1, 1, shape=(5, 5)),
+        # Diversificação (simplificado)
+        concentracao_portfolio=brl.Box(0, 1),  # 0=diverso, 1=concentrado
 
         capital_disponivel=brl.Box(0, 1000000)
     )
 
     action = brl.Dict(
-        # Ações mais conservadoras
-        acoes=brl.Box(-0.5, 0.5, shape=(5,)),  # Menor range
+        # Ação conservadora: menor range
+        acao_trading=brl.Box(-0.5, 0.5),  # Menor range
 
         # Stop loss apertado
         stop_loss=brl.Box(0.03, 0.08),
@@ -284,7 +286,7 @@ class ControllerConservador:
 
     def reward_preservacao_capital(self, state, action, next_state):
         """Evita perdas."""
-        pnl = np.sum(next_state['pnl_nao_realizado'])
+        pnl = next_state['pnl_total']
 
         if pnl < 0:
             return pnl / 10  # Penaliza perdas fortemente
@@ -293,17 +295,15 @@ class ControllerConservador:
 
     def reward_diversificacao(self, state, action, next_state):
         """Incentiva diversificação."""
-        # Calcula Herfindahl index (concentração)
-        posicoes_abs = np.abs(action['acoes'])
-        total = np.sum(posicoes_abs) + 1e-6
-        concentracao = np.sum((posicoes_abs / total) ** 2)
+        # Usa concentração do portfólio (0=diverso, 1=concentrado)
+        concentracao = state['concentracao_portfolio']
 
         # Menor concentração = melhor
         return (1 - concentracao) * 50
 
     def reward_retorno(self, state, action, next_state):
         """Retorno modesto."""
-        pnl = np.sum(next_state['pnl_nao_realizado'])
+        pnl = next_state['pnl_total']
         return max(0, pnl / 100)  # Só recompensa ganhos
 
 
@@ -397,14 +397,12 @@ class HierarchicalTradingSystem:
             # Média ponderada
             decisao = type('obj', (object,), {
                 'action': {
-                    'acoes': (decisao_agr.action['acoes'] * 0.5 +
-                             decisao_cons.action['acoes'] * 0.5),
-                    'stop_loss': np.mean([decisao_agr.action['stop_loss'],
-                                         decisao_cons.action['stop_loss']]),
-                    'tamanho_posicao': np.mean([
-                        decisao_agr.action['tamanho_posicao'],
-                        decisao_cons.action['tamanho_posicao']
-                    ])
+                    'acao_trading': (decisao_agr.action['acao_trading'] * 0.5 +
+                                    decisao_cons.action['acao_trading'] * 0.5),
+                    'stop_loss': (decisao_agr.action['stop_loss'] +
+                                 decisao_cons.action['stop_loss']) / 2,
+                    'tamanho_posicao': (decisao_agr.action['tamanho_posicao'] +
+                                       decisao_cons.action['tamanho_posicao']) / 2
                 }
             })()
 
@@ -412,7 +410,7 @@ class HierarchicalTradingSystem:
             # Fecha todas as posições
             decisao = type('obj', (object,), {
                 'action': {
-                    'acoes': np.array([0, 0, 0, 0, 0]),
+                    'acao_trading': 0.0,
                     'stop_loss': 0.05,
                     'tamanho_posicao': 0.0
                 }
@@ -445,8 +443,8 @@ def demo_hierarchical_trading():
             'volatilidade_mercado': np.random.rand(),
             'tendencia_mercado': np.random.randn() * 0.5,
             'volume_mercado': np.random.rand(),
-            'sp500_retornos': np.random.randn(20) * 0.02,
-            'nasdaq_retornos': np.random.randn(20) * 0.025,
+            'sp500_retorno_medio': np.random.randn() * 0.02,
+            'nasdaq_retorno_medio': np.random.randn() * 0.025,
             'valor_portfolio': 100000,
             'exposicao_atual': np.random.rand() * 0.8,
             'posicoes_abertas': np.random.randint(5, 15),
@@ -470,33 +468,38 @@ def demo_hierarchical_trading():
         print(f"   Tendência: {estado_macro['tendencia_mercado']:+.2%}")
         print(f"   Exposição atual: {estado_macro['exposicao_atual']:.2%}")
 
-        # Estado do mercado
+        # Estado do mercado (agregado)
         estado_mercado = {
-            'precos': np.random.rand(5) * 100 + 50,
-            'retornos_1h': np.random.randn(5) * 0.02,
-            'retornos_24h': np.random.randn(5) * 0.05,
-            'rsi': np.random.rand(5) * 100,
-            'volume_relativo': 0.5 + np.random.rand(5),
-            'posicoes': np.random.randint(-10, 10, 5),
-            'pnl_nao_realizado': np.random.randn(5) * 500,
+            'preco_medio': np.random.rand() * 100 + 50,
+            'retorno_1h_medio': np.random.randn() * 0.02,
+            'retorno_24h_medio': np.random.randn() * 0.05,
+            'rsi_medio': np.random.rand() * 100,
+            'volume_relativo_medio': 0.5 + np.random.rand(),
+            'n_posicoes_long': np.random.randint(0, 5),
+            'n_posicoes_short': np.random.randint(0, 3),
+            'pnl_total': np.random.randn() * 2500,
             'capital_disponivel': 100000,
             'margem_disponivel': 0.8,
-            'volatilidade': np.random.rand(5) * 0.5,
-            'beta': np.random.randn(5) * 0.5 + 1,
-            'matriz_correlacao': np.random.rand(5, 5)
+            'volatilidade_media': np.random.rand() * 0.5,
+            'beta_portfolio': np.random.randn() * 0.5 + 1,
+            'concentracao_portfolio': np.random.rand() * 0.5,
+            'n_posicoes_total': np.random.randint(1, 8)
         }
 
         # Executa estratégia
         decisao = sistema.executar_estrategia(estado_mercado)
 
-        print(f"\n📈 AÇÕES EXECUTADAS:")
-        ativos = ['AAPL', 'GOOGL', 'MSFT', 'AMZN', 'TSLA']
-        for i, ativo in enumerate(ativos):
-            acao = decisao.action['acoes'][i]
+        print(f"\n📈 AÇÃO EXECUTADA:")
+        if 'acao_trading' in decisao.action:
+            acao = decisao.action['acao_trading']
             if abs(acao) > 0.1:
                 operacao = "COMPRA" if acao > 0 else "VENDA"
                 intensidade = abs(acao)
-                print(f"   {ativo}: {operacao} (intensidade: {intensidade:.2f})")
+                print(f"   {operacao} (intensidade: {intensidade:.2f})")
+            else:
+                print(f"   MANTER (neutro)")
+        else:
+            print(f"   Estratégia de LIQUIDAÇÃO")
 
         if hasattr(decisao.action, 'stop_loss'):
             print(f"\n   Stop Loss: {decisao.action['stop_loss']:.1%}")

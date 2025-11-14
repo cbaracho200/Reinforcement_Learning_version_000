@@ -71,7 +71,7 @@ class FornecedorAgent:
 
         # Mensagem ao distribuidor
         disponibilidade_informada=brl.Box(0, 1000),
-        prazo_entrega_dias=brl.Discrete(15, offset=1)  # 1-15 dias
+        prazo_entrega_dias=brl.Box(1, 15)  # 1-15 dias
     )
 
     objectives = brl.Terms(

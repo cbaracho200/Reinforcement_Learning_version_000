@@ -46,13 +46,19 @@ class PersonalizacaoContextual:
         dia_semana=brl.Discrete(7),
         dispositivo=brl.Discrete(3, labels=["mobile", "desktop", "tablet"]),
 
-        # Categoria de interesse (one-hot de 5 categorias)
-        interesses=brl.Box(0, 1, shape=(5,)),
+        # Histórico de cliques por tipo de conteúdo (normalizado 0-1)
+        cliques_produto=brl.Box(0, 1),
+        cliques_artigo=brl.Box(0, 1),
+        cliques_video=brl.Box(0, 1),
+        cliques_oferta=brl.Box(0, 1),
+        cliques_tutorial=brl.Box(0, 1),
 
-        # Histórico de interações com cada tipo de conteúdo
-        # [produto, artigo, video, oferta, tutorial]
-        historico_cliques=brl.Box(0, 1, shape=(5,)),
-        historico_conversoes=brl.Box(0, 1, shape=(5,)),
+        # Histórico de conversões por tipo
+        conv_produto=brl.Box(0, 1),
+        conv_artigo=brl.Box(0, 1),
+        conv_video=brl.Box(0, 1),
+        conv_oferta=brl.Box(0, 1),
+        conv_tutorial=brl.Box(0, 1),
 
         # Segmento do usuário (0=novo, 1=ativo, 2=vip, 3=inativo)
         segmento=brl.Discrete(4, labels=["novo", "ativo", "vip", "inativo"]),
@@ -86,8 +92,15 @@ class PersonalizacaoContextual:
 
     def reward_engagement(self, state, action, next_state):
         """Recompensa baseada na taxa de clique esperada."""
-        # Usa histórico de cliques como proxy
-        taxa_clique_historica = state['historico_cliques'][action]
+        # Mapeia ação para campo de cliques
+        cliques_map = {
+            0: state['cliques_produto'],
+            1: state['cliques_artigo'],
+            2: state['cliques_video'],
+            3: state['cliques_oferta'],
+            4: state['cliques_tutorial']
+        }
+        taxa_clique_historica = cliques_map[action]
 
         # Ajusta baseado no segmento
         segmento = state['segmento']
@@ -110,8 +123,15 @@ class PersonalizacaoContextual:
 
     def reward_conversion(self, state, action, next_state):
         """Recompensa baseada na probabilidade de conversão."""
-        # Taxa de conversão histórica para este tipo de conteúdo
-        taxa_conv_historica = state['historico_conversoes'][action]
+        # Mapeia ação para campo de conversões
+        conv_map = {
+            0: state['conv_produto'],
+            1: state['conv_artigo'],
+            2: state['conv_video'],
+            3: state['conv_oferta'],
+            4: state['conv_tutorial']
+        }
+        taxa_conv_historica = conv_map[action]
 
         # Ajusta pela propensão de compra
         propensao = state['propensao_compra']
@@ -128,8 +148,15 @@ class PersonalizacaoContextual:
 
     def reward_satisfaction(self, state, action, next_state):
         """Penaliza mostrar conteúdo repetitivo ou inadequado."""
-        # Penaliza se já teve muitas interações deste tipo
-        frequencia = state['historico_cliques'][action]
+        # Mapeia ação para campo de cliques
+        cliques_map = {
+            0: state['cliques_produto'],
+            1: state['cliques_artigo'],
+            2: state['cliques_video'],
+            3: state['cliques_oferta'],
+            4: state['cliques_tutorial']
+        }
+        frequencia = cliques_map[action]
 
         if frequencia > 0.8:  # Muito repetitivo
             penalidade = -20
@@ -138,16 +165,23 @@ class PersonalizacaoContextual:
         else:
             penalidade = 0
 
-        # Recompensa por match com interesses
-        match_interesse = state['interesses'][action % 5]
-        bonus_interesse = match_interesse * 10
+        # Bonus base por diversidade
+        bonus_diversidade = (1 - frequencia) * 10
 
-        return penalidade + bonus_interesse
+        return penalidade + bonus_diversidade
 
     def reward_exploration(self, state, action, next_state):
         """Incentiva explorar braços menos testados."""
+        # Mapeia ação para campo de cliques
+        cliques_map = {
+            0: state['cliques_produto'],
+            1: state['cliques_artigo'],
+            2: state['cliques_video'],
+            3: state['cliques_oferta'],
+            4: state['cliques_tutorial']
+        }
         # Menos cliques = mais exploração
-        exploracao = 1 - state['historico_cliques'][action]
+        exploracao = 1 - cliques_map[action]
 
         return exploracao * 10
 
@@ -318,9 +352,16 @@ def comparar_estrategias():
             'hora_do_dia': np.random.randint(24),
             'dia_semana': np.random.randint(7),
             'dispositivo': np.random.randint(3),
-            'interesses': np.random.rand(5),
-            'historico_cliques': np.random.rand(5) * 0.5,
-            'historico_conversoes': np.random.rand(5) * 0.3,
+            'cliques_produto': np.random.rand() * 0.5,
+            'cliques_artigo': np.random.rand() * 0.5,
+            'cliques_video': np.random.rand() * 0.5,
+            'cliques_oferta': np.random.rand() * 0.5,
+            'cliques_tutorial': np.random.rand() * 0.5,
+            'conv_produto': np.random.rand() * 0.3,
+            'conv_artigo': np.random.rand() * 0.3,
+            'conv_video': np.random.rand() * 0.3,
+            'conv_oferta': np.random.rand() * 0.3,
+            'conv_tutorial': np.random.rand() * 0.3,
             'segmento': np.random.randint(4),
             'propensao_compra': np.random.rand(),
             'propensao_churn': np.random.rand()
