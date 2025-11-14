@@ -445,8 +445,8 @@ def train(problem: ProblemSpec,
           target_score: float = None,
           config: Dict = None) -> Agent:
     """Função de conveniência para treinamento rápido."""
-    
-    from .algorithms.registry import AlgorithmRegistry
+
+    from ..algorithms.registry import AlgorithmRegistry
     
     # Seleciona algoritmo
     if algorithm == "auto":
