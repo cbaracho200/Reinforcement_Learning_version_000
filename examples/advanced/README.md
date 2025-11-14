@@ -77,6 +77,142 @@ python examples/advanced/03_inventory_management.py
 
 ---
 
+### 4. 🎯 Contextual Bandits (`04_contextual_bandits_personalization.py`)
+
+**Problema:** Personalização de conteúdo em tempo real
+
+**Demonstra:**
+- ✅ Contextual Multi-Armed Bandits
+- ✅ Exploration vs Exploitation (Thompson Sampling, UCB)
+- ✅ Ensemble de estratégias (Thompson, UCB, Epsilon-Greedy, RL)
+- ✅ A/B testing inteligente
+- ✅ Cold-start problem
+
+**Executar:**
+```bash
+python examples/advanced/04_contextual_bandits_personalization.py
+```
+
+**O que você vai aprender:**
+- Implementar bandits contextuais
+- Combinar múltiplas estratégias de exploração
+- Realizar A/B testing adaptativo
+- Personalizar conteúdo por usuário
+- Comparar Thompson Sampling vs UCB vs RL
+
+**Casos de uso:**
+- Recomendação de produtos
+- Personalização de emails/banners
+- Seleção de conteúdo dinâmico
+
+---
+
+### 5. 🤝 Multi-Agent RL (`05_multi_agent_supply_chain.py`)
+
+**Problema:** Cadeia de suprimentos com múltiplos agentes cooperando
+
+**Demonstra:**
+- ✅ Multi-Agent Reinforcement Learning (MARL)
+- ✅ Comunicação entre agentes
+- ✅ 3 agentes cooperando (Fornecedor, Distribuidor, Varejista)
+- ✅ Coordenação e troca de mensagens
+- ✅ Análise de Bullwhip Effect
+
+**Executar:**
+```bash
+python examples/advanced/05_multi_agent_supply_chain.py
+```
+
+**O que você vai aprender:**
+- Treinar múltiplos agentes simultaneamente
+- Implementar comunicação entre agentes
+- Coordenar decisões distribuídas
+- Minimizar efeito cascata (Bullwhip)
+- Credit assignment em MARL
+
+**Casos de uso:**
+- Supply chain management
+- Sistemas distribuídos
+- Leilões multi-agente
+- Jogos cooperativos
+
+---
+
+### 6. 🏗️ Hierarchical RL (`06_hierarchical_trading_system.py`)
+
+**Problema:** Sistema de trading com decisões hierárquicas
+
+**Demonstra:**
+- ✅ Hierarchical Reinforcement Learning (HRL)
+- ✅ Meta-Controller (estratégia de alto nível)
+- ✅ Controllers (execução tática)
+- ✅ Temporal abstractions (opções/skills)
+- ✅ Decomposição hierárquica de problemas complexos
+
+**Estrutura:**
+```
+Meta-Controller → Escolhe ESTRATÉGIA (Agressiva/Moderada/Conservadora)
+      ↓
+Controllers → Executam AÇÕES específicas (compra/venda, stop loss)
+```
+
+**Executar:**
+```bash
+python examples/advanced/06_hierarchical_trading_system.py
+```
+
+**O que você vai aprender:**
+- Decompor problemas complexos em hierarquias
+- Treinar políticas de alto e baixo nível
+- Usar temporal abstractions
+- Adaptar estratégias ao contexto
+
+**Casos de uso:**
+- Trading automatizado
+- Robótica (planejamento hierárquico)
+- Jogos complexos
+- Navegação autônoma
+
+---
+
+### 7. 🎲 Ensemble Learning (`07_ensemble_model_selection.py`)
+
+**Problema:** Combinar múltiplos agentes RL para robustez
+
+**Demonstra:**
+- ✅ Ensemble de agentes com diferentes configurações
+- ✅ Voting (uniforme e ponderado)
+- ✅ Stacking (meta-learning)
+- ✅ Mixture of Experts
+- ✅ Dynamic model selection
+- ✅ Análise de diversidade
+
+**Técnicas:**
+1. **Voting Ensemble:** voto majoritário/ponderado
+2. **Stacking:** meta-modelo aprende a combinar
+3. **Dynamic Selection:** escolhe melhor modelo por contexto
+4. **Mixture of Experts:** combina especializações
+
+**Executar:**
+```bash
+python examples/advanced/07_ensemble_model_selection.py
+```
+
+**O que você vai aprender:**
+- Treinar ensemble de agentes
+- Combinar predições de múltiplos modelos
+- Usar meta-learning para seleção
+- Avaliar diversidade do ensemble
+- Aumentar robustez via ensemble
+
+**Casos de uso:**
+- Prevenção de churn
+- Detecção de fraude
+- Sistemas críticos (saúde, finanças)
+- Decisões de alto risco
+
+---
+
 ## 🚀 Como Executar os Exemplos
 
 ### Pré-requisitos
@@ -99,10 +235,16 @@ pip install -e .
 # Navegar até a pasta do projeto
 cd Reinforcement_Learning_version_000
 
-# Executar exemplo específico
+# Exemplos básicos
 python examples/advanced/01_portfolio_management.py
 python examples/advanced/02_dynamic_pricing.py
 python examples/advanced/03_inventory_management.py
+
+# Exemplos avançados (técnicas modernas)
+python examples/advanced/04_contextual_bandits_personalization.py
+python examples/advanced/05_multi_agent_supply_chain.py
+python examples/advanced/06_hierarchical_trading_system.py
+python examples/advanced/07_ensemble_model_selection.py
 ```
 
 ### Ajustar tempo de treino
@@ -186,6 +328,44 @@ if __name__ == "__main__":
 ### 5. Gestão de Risco
 - **CVaR:** considera piores cenários
 - **Max Drawdown:** limita perdas máximas
+
+### 6. Técnicas Avançadas ⭐ NOVO
+
+#### Contextual Bandits
+- **Exploration vs Exploitation:** balanço entre explorar e exploitar
+- **Thompson Sampling:** amostragem bayesiana
+- **UCB (Upper Confidence Bound):** intervalos de confiança
+- **Epsilon-Greedy:** exploração aleatória
+
+#### Multi-Agent RL
+- **Comunicação entre agentes:** troca de mensagens
+- **Coordenação descentralizada:** decisões distribuídas
+- **Credit assignment:** atribuir recompensa a agentes
+- **Emergência:** comportamento cooperativo emergente
+
+#### Hierarchical RL
+- **Meta-Controller:** decisões estratégicas de alto nível
+- **Controllers:** execução tática de baixo nível
+- **Temporal abstractions:** skills e opções reutilizáveis
+- **Decomposição hierárquica:** dividir problemas complexos
+
+#### Ensemble Learning
+- **Voting:** combinação por votação
+- **Stacking:** meta-modelo aprende a combinar
+- **Mixture of Experts:** especialistas para diferentes contextos
+- **Dynamic Selection:** escolhe modelo por situação
+- **Diversidade:** importância de modelos diferentes
+
+---
+
+## 🆚 Quando Usar Cada Técnica
+
+| Técnica | Quando Usar | Exemplo |
+|---------|-------------|---------|
+| **Contextual Bandits** | Decisões independentes, feedback imediato | Recomendação de produtos, A/B testing |
+| **Multi-Agent RL** | Múltiplos tomadores de decisão cooperando | Supply chain, leilões, jogos |
+| **Hierarchical RL** | Problemas com múltiplos níveis de abstração | Trading, robótica, planejamento |
+| **Ensemble** | Aumentar robustez e performance | Sistemas críticos, detecção de fraude |
 
 ---
 
