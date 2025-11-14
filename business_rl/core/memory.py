@@ -232,12 +232,19 @@ class UnifiedMemory:
     
     def _batch_to_tensors(self, batch: List[Experience]) -> Dict[str, torch.Tensor]:
         """Converte batch para tensores."""
-        
+
+        # Função auxiliar para converter dict em array
+        def _dict_to_array(obs):
+            if isinstance(obs, dict):
+                # Ordena por chave para consistência
+                return np.array([obs[k] for k in sorted(obs.keys())], dtype=np.float32)
+            return np.array(obs, dtype=np.float32)
+
         # Agrupa por campo
-        states = np.array([exp.state for exp in batch])
+        states = np.array([_dict_to_array(exp.state) for exp in batch])
         actions = np.array([exp.action for exp in batch])
         rewards = np.array([exp.reward for exp in batch])
-        next_states = np.array([exp.next_state for exp in batch])
+        next_states = np.array([_dict_to_array(exp.next_state) for exp in batch])
         dones = np.array([exp.done for exp in batch])
         
         batch_dict = {
