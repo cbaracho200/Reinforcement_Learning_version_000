@@ -166,12 +166,19 @@ class PPOAgent(Agent):
             self.problem_spec.action_spec
         ).to(self.device)
 
-    def act(self, observation: np.ndarray, 
+    def act(self, observation: np.ndarray,
             deterministic: bool = False) -> Decision:
         """Seleciona ação."""
-        
+
+        # Converte observação (pode ser dict ou array)
+        if isinstance(observation, dict):
+            # Converte dicionário para array (ordena por chave para consistência)
+            obs_array = np.array([observation[k] for k in sorted(observation.keys())], dtype=np.float32)
+        else:
+            obs_array = np.array(observation, dtype=np.float32)
+
         # Converte para tensor
-        obs_tensor = torch.FloatTensor(observation).unsqueeze(0).to(self.device)
+        obs_tensor = torch.FloatTensor(obs_array).unsqueeze(0).to(self.device)
         
         with torch.no_grad():
             # Política
