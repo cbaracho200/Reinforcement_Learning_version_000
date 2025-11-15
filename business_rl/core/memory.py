@@ -278,31 +278,74 @@ class UnifiedMemory:
         
         return batch_dict
     
-    def compute_returns(self, gamma: float = 0.99, 
+    def compute_returns(self, gamma: float = 0.99,
                        lambda_: float = 0.95) -> None:
-        """Calcula retornos e vantagens (GAE)."""
-        
+        """Calcula retornos e vantagens usando GAE (Generalized Advantage Estimation)."""
+
+        # Processa episódios completos
         for episode in self.episodes:
             if not episode:
                 continue
-            
-            # Calcula retornos Monte Carlo
-            returns = []
-            running_return = 0
-            
-            for exp in reversed(episode):
-                if exp.done:
-                    running_return = 0
-                running_return = exp.reward + gamma * running_return
-                returns.insert(0, running_return)
-            
+
+            # GAE: Calcula vantagens e retornos
+            advantages = []
+            last_advantage = 0
+
+            # Reverso: do fim para o início
+            for i in reversed(range(len(episode))):
+                exp = episode[i]
+
+                # Próximo valor (bootstrap)
+                if i == len(episode) - 1:
+                    next_value = 0  # Terminal
+                else:
+                    next_value = episode[i + 1].value if episode[i + 1].value is not None else 0
+
+                # TD Error (delta)
+                value = exp.value if exp.value is not None else 0
+                delta = exp.reward + gamma * next_value * (1 - exp.done) - value
+
+                # GAE
+                advantage = delta + gamma * lambda_ * (1 - exp.done) * last_advantage
+                advantages.insert(0, advantage)
+                last_advantage = advantage
+
+            # Retornos = vantagens + valores
+            for exp, adv in zip(episode, advantages):
+                exp.advantage = adv
+                value = exp.value if exp.value is not None else 0
+                exp.returns = adv + value
+
+        # IMPORTANTE: Também processa o episódio atual (ainda não terminado)
+        # Isso é crucial para PPO que precisa de experiências frequentes
+        if self.current_episode:
+            advantages = []
+            last_advantage = 0
+
+            for i in reversed(range(len(self.current_episode))):
+                exp = self.current_episode[i]
+
+                # Próximo valor
+                if i == len(self.current_episode) - 1:
+                    # Episódio não terminado: usa valor atual como bootstrap
+                    next_value = exp.value if exp.value is not None else 0
+                else:
+                    next_value = self.current_episode[i + 1].value if self.current_episode[i + 1].value is not None else 0
+
+                # TD Error
+                value = exp.value if exp.value is not None else 0
+                delta = exp.reward + gamma * next_value * (1 - exp.done) - value
+
+                # GAE
+                advantage = delta + gamma * lambda_ * (1 - exp.done) * last_advantage
+                advantages.insert(0, advantage)
+                last_advantage = advantage
+
             # Atualiza experiências
-            for exp, ret in zip(episode, returns):
-                exp.returns = ret
-                
-                # Calcula vantagem se tiver valor
-                if exp.value is not None:
-                    exp.advantage = ret - exp.value
+            for exp, adv in zip(self.current_episode, advantages):
+                exp.advantage = adv
+                value = exp.value if exp.value is not None else 0
+                exp.returns = adv + value
     
     def clear(self):
         """Limpa a memória."""

@@ -288,24 +288,40 @@ class Trainer:
     
     def _update_agent(self) -> Dict[str, float]:
         """Atualiza o agente com dados da memória."""
-        # Amostra batch
-        batch = self.memory.sample(method='uniform')
-        
+
+        # Para algoritmos on-policy (PPO), precisa calcular vantagens primeiro
+        if hasattr(self.agent, '__class__') and 'PPO' in self.agent.__class__.__name__:
+            # Calcula retornos e vantagens usando GAE
+            self.memory.compute_returns(
+                gamma=self.config.get('gamma', 0.99),
+                lambda_=self.config.get('gae_lambda', 0.95)
+            )
+            # Usa todo o buffer (on-policy)
+            batch = self.memory.sample(method='sequential')
+        else:
+            # Off-policy: amostra normalmente
+            batch = self.memory.sample(method='uniform')
+
         # Move para dispositivo
         for key in batch:
             if isinstance(batch[key], torch.Tensor):
                 batch[key] = batch[key].to(self.config['device'])
-        
+
         # Atualiza agente
         metrics = self.agent.update(batch)
-        
+
+        # Para algoritmos on-policy, limpa buffer após update
+        # (não pode reutilizar dados antigos)
+        if hasattr(self.agent, '__class__') and 'PPO' in self.agent.__class__.__name__:
+            self.memory.clear()
+
         # Atualiza prioridades se usar PER
         if self.config.get('prioritized_replay') and 'td_errors' in metrics:
             self.memory.update_priorities(
                 batch['indices'],
                 metrics['td_errors'].cpu().numpy()
             )
-        
+
         return metrics
     
     def evaluate(self, n_episodes: Optional[int] = None) -> float:
